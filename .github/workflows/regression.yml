@@ -1,0 +1,33 @@
+name: Nightly Regression Tests
+
+on:
+  schedule:
+    - cron: '0 7 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment (qa or staging)'
+        required: true
+        default: 'qa'
+
+jobs:
+  regression:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+    - name: Install dependencies
+      run: npm ci
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+    - name: Run Regression tests
+      run: npx playwright test --grep @regression
+    - uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: regression-report
+        path: playwright-report/
+        retention-days: 14
